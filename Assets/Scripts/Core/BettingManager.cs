@@ -64,7 +64,7 @@ namespace com.eudiko.slotmachine
         {
             int winAmount = currentBet * payoutMultiplier;
             currentGold += winAmount;
-            resultText.text = "$You Won {winAmount} G";
+            resultText.text = $"You Won {winAmount} G";
             UpdateUI();
         }
 
