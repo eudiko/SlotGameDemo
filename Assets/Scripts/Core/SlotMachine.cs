@@ -46,7 +46,7 @@ namespace com.eudiko.slotmachine
                 yield break;
             }
 
-            results = SymbolGenerator.Instance.PickAllReels();
+            results = SymbolGenerator.Instance.PickAllReels();//get results
 
             AudioManager.Instance.PlaySpinLoop();
 
@@ -56,6 +56,7 @@ namespace com.eudiko.slotmachine
 
             yield return new WaitForSeconds(minSpinDuration);
 
+            //stop each reel one by one
             Tween leftTween = reelLeft.StopSpin(results[0]);
             yield return leftTween.WaitForCompletion();
             AudioManager.Instance.PlayReelStop();
@@ -83,7 +84,7 @@ namespace com.eudiko.slotmachine
         private void EvaluateResult()
         {
             bool isWin = results[0].thisSymbol == results[1].thisSymbol
-                      && results[1].thisSymbol == results[2].thisSymbol;
+                      && results[1].thisSymbol == results[2].thisSymbol;//win condition
 
             if (isWin)
             {
