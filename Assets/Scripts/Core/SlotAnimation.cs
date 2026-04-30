@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
-using UnityEngine.InputSystem;
 
 namespace com.eudiko.slotmachine
 {
@@ -9,15 +8,13 @@ namespace com.eudiko.slotmachine
     {
         private RectTransform contentTransform;
         [SerializeField] private Image[] symbols;
-
         [SerializeField] private float spinSpeed = 2000f;
         private float symbolHeight = 100;
-
         private bool isSpinning;
 
         void Awake()
         {
-            contentTransform = gameObject.GetComponent<RectTransform>();
+            contentTransform = GetComponent<RectTransform>();
         }
 
         void Start()
@@ -28,48 +25,67 @@ namespace com.eudiko.slotmachine
 
         void Update()
         {
-            if (Keyboard.current.spaceKey.wasPressedThisFrame)
-            {
-                StartSpin();
-            }
-
-            if (Keyboard.current.sKey.wasPressedThisFrame)
-            {
-                StopSpin();
-            }
-
-            if (!isSpinning)
-                return;
+            if (!isSpinning) return;
 
             contentTransform.anchoredPosition += Vector2.down * spinSpeed * Time.deltaTime;
 
             foreach (var symbol in symbols)
             {
-                if (contentTransform.anchoredPosition.y < -symbolHeight * 3)
+                float viewportY = contentTransform.anchoredPosition.y
+                                + symbol.rectTransform.anchoredPosition.y;
+
+                if (viewportY < -symbolHeight * 2)
                 {
-                    contentTransform.anchoredPosition += Vector2.up * symbolHeight * symbols.Length;
+                    float maxLocalY = float.MinValue;
+                    foreach (var s in symbols)
+                        if (s.rectTransform.anchoredPosition.y > maxLocalY)
+                            maxLocalY = s.rectTransform.anchoredPosition.y;
+
+                    symbol.rectTransform.anchoredPosition =
+                        new Vector2(0, maxLocalY + symbolHeight);
                 }
             }
         }
 
         public void StartSpin()
         {
-            isSpinning = true;
             contentTransform.DOKill();
+            isSpinning = true;
         }
 
-        public Tween StopSpin()
+        public Tween StopSpin(SymbolData target)
         {
             isSpinning = false;
+
             float currentY = contentTransform.anchoredPosition.y;
-            float snappedY = Mathf.Round(currentY / symbolHeight) * symbolHeight;
+
+            Image closestSymbol = null;
+            float closestDist = float.MaxValue;
+
+            foreach (var sym in symbols)
+            {
+                float viewportY = currentY + sym.rectTransform.anchoredPosition.y;
+                float dist = Mathf.Abs(viewportY);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closestSymbol = sym;
+                }
+            }
+
+            if (target != null && closestSymbol != null)
+            {
+                closestSymbol.sprite = target.sprite;
+            }
+
+            float targetY = closestSymbol != null
+                ? -closestSymbol.rectTransform.anchoredPosition.y
+                : Mathf.Round(currentY / symbolHeight) * symbolHeight;
 
             Sequence sequence = DOTween.Sequence();
-
-            sequence.Append(contentTransform.DOAnchorPosY(snappedY - 40f, 0.25f)
+            sequence.Append(contentTransform.DOAnchorPosY(targetY - 40f, 0.25f)
                 .SetEase(Ease.OutQuad));
-
-            sequence.Append(contentTransform.DOAnchorPosY(snappedY, 0.35f)
+            sequence.Append(contentTransform.DOAnchorPosY(targetY, 0.35f)
                 .SetEase(Ease.OutBounce));
 
             return sequence;
